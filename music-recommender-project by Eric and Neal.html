@@ -1,0 +1,2751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MusicMatch - Intelligent Music Recommendation System</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- AOS Animation Library -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3498db',
+            secondary: '#2ecc71',
+            accent: '#e74c3c',
+            dark: '#1a1a2e',
+            light: '#f8f9fa',
+            'primary-dark': '#2980b9',
+            'primary-light': '#5dade2',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .card-hover {
+        @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+      }
+      .glass-effect {
+        @apply bg-white bg-opacity-20 backdrop-blur-lg;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    }
+    
+    /* 自定义自定义样式 */
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(90deg, #3498db, #2ecc71);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .music-card {
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    
+    .music-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .music-card:hover .play-button {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .play-button {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    }
+    
+    .filter-item {
+      transition: all 0.2s ease;
+    }
+    
+    .filter-item:hover, .filter-item.active {
+      background-color: rgba(52, 152, 219, 0.2);
+      color: #3498db;
+    }
+    
+    .filter-item.active {
+      border-left: 3px solid #3498db;
+    }
+    
+    .audio-player {
+      backdrop-filter: blur(10px);
+      background-color: rgba(26, 26, 46, 0.8);
+    }
+  </style>
+</head>
+<body class="text-light">
+  <!-- 导航栏 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-dark bg-opacity-80 backdrop-blur-md shadow-lg">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-music text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold gradient-text">Music<span class="text-white">Match</span></h1>
+      </div>
+      
+      <div class="hidden md:flex items-center space-x-6">
+        <a href="#" class="text-white hover:text-primary transition-colors">Home</a>
+        <a href="#" class="text-white hover:text-primary transition-colors">Recommendations</a>
+        <a href="#" class="text-white hover:text-primary transition-colors">Charts</a>
+        <a href="#" class="text-white hover:text-primary transition transition-colors">My Collection</a>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <div class="relative">
+          <input type="text" placeholder="Search songs, artists..." class="bg-dark-800 text-sm rounded-full py-2 px-4 pl-10 w-40 md:w-64 focus:outline-none focus:ring-2 focus:ring-primary">
+          <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
+        </div>
+        <button class="bg-primary hover:bg-primary-dark text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors">
+          <i class="fa fa-user"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 pt-24 pb-32">
+    <!-- 页面标题 -->
+    <div class="mb-8 text-center" data-aos="fade-up">
+      <h2 class="text-3xl md:text-4xl font-bold mb-2">Intelligent Music Recommendations</h2>
+      <p class="text-gray-400 max-w-2xl mx-auto">Discover your perfect music match based on your preferences</p>
+    </div>
+    
+    <!-- 主要内容布局 -->
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- 左侧筛选区 -->
+      <div class="lg:w-1/4" data-aos="fade-right">
+        <div class="bg-dark bg-opacity-50 rounded-xl p-5 shadow-lg">
+          <h3 class="text-xl font-semibold mb-4 flex items-center">
+            <i class="fa fa-sliders text-primary mr-2"></i>
+            筛选条件
+          </h3>
+          
+          <!-- 筛选选项 -->
+          <div class="space-y-6">
+            <!-- 节奏筛选 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Tempo</label>
+              <div class="space-y-1">
+                <div class="filter-item active rounded-lg p-3 cursor-pointer" data-filter="tempo" data-value="Any">
+                  <span class="font-medium">Any</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="tempo" data-value="Slow">
+                  <span class="font-medium">Slow</span>
+                  <span class="text-xs text-gray-400 ml-2">(< 90 BPM)</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="tempo" data-value="Medium">
+                  <span class="font-medium">Medium</span>
+                  <span class="text-xs text-gray-400 ml-2">(90-130 BPM)</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="tempo" data-value="Fast">
+                  <span class="font-medium">Fast</span>
+                  <span class="text-xs text-gray-400 ml-2">(> 130 BPM)</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 语言筛选 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Language</label>
+              <div class="space-y-1">
+                <div class="filter-item active rounded-lg p-3 cursor-pointer" data-filter="language" data-value="Any">
+                  <span class="font-medium">Any</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="language" data-value="English">
+                  <span class="font-medium">English</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="language" data-value="Chinese">
+                  <span class="font-medium">Chinese</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="language" data-value="Japanese">
+                  <span class="font-medium">Japanese</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="language" data-value="Korean">
+                  <span class="font-medium">Korean</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="language" data-value="Instrumental">
+                  <span class="font-medium">Instrumental</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 调式筛选 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Mode</label>
+              <div class="space-y-1">
+                <div class="filter-item active rounded-lg p-3 cursor-pointer" data-filter="mode" data-value="Any">
+                  <span class="font-medium">Any</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="mode" data-value="Major">
+                  <span class="font-medium">Major</span>
+                  <span class="text-xs text-gray-400 ml-2">Happy, Bright</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="mode" data-value="Minor">
+                  <span class="font-medium">Minor</span>
+                  <span class="text-xs text-gray-400 ml-2">Sad, Emotional</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="mode" data-value="Modal">
+                  <span class="font-medium">Modal</span>
+                  <span class="text-xs text-gray-400 ml-2">Unique, Exotic</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 能量筛选 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Energy</label>
+              <div class="space-y-1">
+                <div class="filter-item active rounded-lg p-3 cursor-pointer" data-filter="energy" data-value="Any">
+                  <span class="font-medium">Any</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="energy" data-value="Low">
+                  <span class="font-medium">Low</span>
+                  <span class="text-xs text-gray-400 ml-2">Calm, Relaxing</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="energy" data-value="Medium">
+                  <span class="font-medium">Medium</span>
+                  <span class="text-xs text-gray-400 ml-2">Balanced, Moderate</span>
+                </div>
+                <div class="filter-item rounded-lg p-3 cursor-pointer" data-filter="energy" data-value="High">
+                  <span class="font-medium">High</span>
+                  <span class="text-xs text-gray-400 ml-2">Energetic, Dynamic</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 推荐数量 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Number of Recommendations</label>
+              <div class="flex items-center">
+                <input type="range" min="1" max="20" value="5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" id="recommend-count">
+                <span class="ml-3 text-sm font-medium w-8" id="count-value">5</span>
+              </div>
+            </div>
+            
+            <!-- 推荐按钮 -->
+            <div class="pt-4">
+              <button id="recommend-btn" class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center">
+                <i class="fa fa-magic mr-2"></i>
+                开始推荐
+              </button>
+              
+              <button id="random-btn" class="w-full mt-3 bg-dark bg-opacity-50 border border-gray-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-opacity-70 transition-opacity flex items-center justify-center">
+                <i class="fa fa-random mr-2"></i>
+                随机推荐
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧结果区 -->
+      <div class="lg:w-3/4" data-aos="fade-left">
+        <!-- 结果标题 -->
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-semibold flex items-center">
+            <i class="fa fa-list-alt text-primary mr-2"></i>
+            <span id="result-title">Recommendations</span>
+          </h3>
+          
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-400">Sort by:</span>
+            <select class="bg-dark bg-opacity-50 border border-gray-700 rounded-lg py-1 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="match">Match</option>
+              <option value="popularity">Popularity</option>
+              <option value="newest">Newest</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- 结果网格 -->
+        <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- 推荐结果将通过JavaScript动态生成 -->
+          <div class="col-span-full text-center py-12 text-gray-400" id="empty-state">
+            <i class="fa fa-music text-5xl mb-4 opacity-20"></i>
+            <h4 class="text-xl font-medium mb-2">Ready to discover new music?</h4>
+            <p>Select your preferences and click the "Get Recommendations" button to find your perfect match</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- 音乐播放器 (默认隐藏) -->
+  <div id="audio-player" class="audio-player fixed bottom-0 left-0 right-0 border-t border-gray-800 py-3 px-4 hidden">
+    <div class="container mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <img id="player-cover" src="" alt="Album Cover" class="w-14 h-14 rounded-md object-cover">
+        <div>
+          <h5 id="player-title" class="font-medium">Song Title</h5>
+          <p id="player-artist" class="text-sm text-gray-400">Artist</p>
+        </div>
+        <button id="player-play" class="text-primary hover:text-white transition-colors">
+          <i class="fa fa-play text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="hidden md:flex items-center space-x-4 flex-grow max-w-md mx-8">
+        <span id="player-current-time" class="text-xs text-gray-400">0:00</span>
+        <div class="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+          <div id="player-progress" class="h-full bg-primary" style="width: 0%"></div>
+        </div>
+        <span id="player-duration" class="text-xs text-gray-400">0:00</span>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <button class="text-gray-400 hover:text-white transition-colors">
+          <i class="fa fa-heart-o"></i>
+        </button>
+        <button class="text-gray-400 hover:text-white transition-colors">
+          <i class="fa fa-step-forward"></i>
+        </button>
+        <button class="text-gray-400 hover:text-white transition-colors">
+          <i class="fa fa-repeat"></i>
+        </button>
+        <button class="text-gray-400 hover:text-white transition-colors">
+          <i class="fa fa-random"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let progressInterval;
+    
+    // 初始化AOS动画库
+    document.addEventListener('DOMContentLoaded', function() {
+      AOS.init({
+        duration: 800,
+        easing: 'ease-out',
+        once: true
+      });
+      
+      // 初始化筛选器交互
+      initFilters();
+      
+      // 初始化推荐按钮
+      initRecommendButtons();
+      
+      // 初始化推荐数量滑块
+      initCountSlider();
+      
+      // 初始化播放器交互
+      initPlayerControls();
+    });
+    
+    // 音乐数据
+    const originalMusicData = [
+      {
+        title: "Someone Like You",
+        artist: "Adele",
+        tempo: 67,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop, Soul",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/cf69e822c56f254e283a323e7f820d2a~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303361&x-signature=%2FZXjx2KzHfIb5i0%2BaAixeKcNhYE%3D",
+        description: "Adele Laurie Blue Adkins MBE is an English singer and songwriter. She is known for her powerful mezzo-soprano vocal range and emotionally charged songs."
+      },
+      {
+        title: "Clair de Lune",
+        artist: "Claude Debussy",
+        tempo: 66,
+        tempoCategory: "Slow",
+        language: "Instrumental",
+        mode: "Modal",
+        energy: "Low",
+        style: "Classical, Impressionism",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "Achille-Claude Debussy was a French composer. He is considered one of the most influential composers of the late 19th and early 20th centuries."
+      },
+      {
+        title: "Sultans of Swing",
+        artist: "Dire Straits",
+        tempo: 93,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock, Blues Rock",
+        cover: "https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/43d7c76e6d15438e9b699dd1d24dbb67~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303361&x-signature=7Vd0VrseaUXmnMUmaFG2ysJXYHQ%3D",
+        description: "Dire Straits were a British rock band formed in 1977 by Mark Knopfler. They were known for their technically proficient guitar work and narrative lyrics."
+      },
+      {
+        title: "Yesterday",
+        artist: "The Beatles",
+        tempo: 73,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Rock, Pop",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/b1162d0dc63a4a7df73c1292a699abcc~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303378&x-signature=yF%2F6Eth2ocHZf0V1B14%2FseTvJjk%3D",
+        description: "The Beatles were an English rock band formed in Liverpool in 1960. They are widely regarded as the most influential band of all time."
+      },
+      {
+        title: "Billie Jean",
+        artist: "Michael Jackson",
+        tempo: 116,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop, Funk",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/d40568a258154bc7745899077671c3b2~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303378&x-signature=pPJJBajinx2Tzc9GBwhGOWInNFI%3D",
+        description: "Michael Joseph Jackson was an American singer, songwriter, dancer, and philanthropist, known as the 'King of Pop'."
+      },
+      {
+        title: "Hotel California",
+        artist: "Eagles",
+        tempo: 75,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock, Soft Rock",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/6b4b611ff059722790687f761bfbf612~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303378&x-signature=pcV7ntIf0%2F1mXONM3mmZLp1J7QY%3D",
+        description: "The Eagles are an American rock band formed in Los Angeles in 1971. They are one of the best-selling bands of all time."
+      },
+      {
+        title: "Bohemian Rhapsody",
+        artist: "Queen",
+        tempo: 143,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Rock, Opera Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/56f466023700983b1830bd0167990e4a~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=fcISdtqhg5m2WGzU5P3gGn3nxJ0%3D",
+        description: "Queen are a British rock band formed in London in 1970. They were fronted by Freddie Mercury and known for their eclectic style."
+      },
+      {
+        title: "Smells Like Teen Spirit",
+        artist: "Nirvana",
+        tempo: 117,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Rock, Grunge",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/73a1dba80826b5e44a7f743eeb265584~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=RfiWNxqqRAmQMzRK4czsQ3eqiE0%3D",
+        description: "Nirvana was an American rock band formed in Aberdeen, Washington, in 1987. They were a key band in the grunge movement of the early 1990s."
+      },
+      {
+        title: "Sweet Child O' Mine",
+        artist: "Guns N' Roses",
+        tempo: 123,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock, Hard Rock",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/image/e2c9be93f038def5f67514933f4a8027~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=WVb%2BOaORUX7fgOm6pPGNxmptefs%3D",
+        description: "Guns N' Roses are an American hard rock band formed in Los Angeles in 1985. They are known for their hit songs and energetic live performances."
+      },
+      {
+        title: "Stairway to Heaven",
+        artist: "Led Zeppelin",
+        tempo: 82,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock, Hard Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/01c2556375e3e0640d32bd2bbac0695e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=%2BApsxksN%2F%2F9QmUwmt76WkMjhA4c%3D",
+        description: "Led Zeppelin were an English rock band formed in London in 1968. They are widely considered one of the most innovative and influential rock bands in history."
+      },
+      {
+        title: "Imagine",
+        artist: "John Lennon",
+        tempo: 75,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop, Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/01c2556375e3e0640d32bd2bbac0695e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=%2BApsxksN%2F%2F9QmUwmt76WkMjhA4c%3D",
+        description: "John Winston Lennon was an English singer, songwriter, peace activist, and co-founder of The Beatles."
+      },
+      {
+        title: "Like a Rolling Stone",
+        artist: "Bob Dylan",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock, Folk Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/01c2556375e3e0640d32bd2bbac0695e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=%2BApsxksN%2F%2F9QmUwmt76WkMjhA4c%3D",
+        description: "Bob Dylan is an American singer-songwriter, poet, and painter. He is widely regarded as one of the most influential figures in popular music history."
+      },
+      {
+        title: "Purple Haze",
+        artist: "Jimi Hendrix",
+        tempo: 147,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Rock, Psychedelic Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/01c2556375e3e0640d32bd2bbac0695e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303399&x-signature=%2BApsxksN%2F%2F9QmUwmt76WkMjhA4c%3D",
+        description: "James Marshall 'Jimi' Hendrix was an American guitarist, singer, and songwriter. He is widely regarded as one of the greatest guitarists in rock history."
+      },
+      {
+        title: "稻香 (Rice Field)",
+        artist: "周杰伦 (Jay Chou)",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop, Chinese Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/19c97b81d0c14db7a74dcb3405cd524e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319704&x-signature=%2FsgA6fHcpHZD3AvgCLjRLYUAmp0%3D",
+        description: "Jay Chou is a Taiwanese musician, singer, songwriter, record producer, actor, and director. He is known for blending Western and Eastern musical styles."
+      },
+      {
+        title: "甜蜜蜜 (Sweet Honey)",
+        artist: "邓丽君 (Teresa Teng)",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop, Chinese Traditional Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/e865f25f2694e43bb552521b3b19e57f~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319703&x-signature=W1CgSJjct2gd5JwpFTbc8XLpRgE%3D",
+        description: "Teresa Teng was a Taiwanese singer, actress, musician, and philanthropist. She is considered one of the most influential and successful singers in the history of Chinese music."
+      },
+      {
+        title: "First Love",
+        artist: "宇多田光 (Hikaru Utada)",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "Japanese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop, J-Pop",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/a96b4dd85f6acc73fe89b5ccbd26c62c~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319703&x-signature=qP6CkjVdHN9TPzsDoncD00YuXgU%3D",
+        description: "Hikaru Utada is a Japanese-American singer-songwriter and producer. She is one of the best-selling music artists in Japan of all time."
+      },
+      {
+        title: "Dynamite",
+        artist: "BTS",
+        tempo: 114,
+        tempoCategory: "Medium",
+        language: "Korean",
+        mode: "Major",
+        energy: "High",
+        style: "Pop, K-Pop, Disco",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/c05a4514405933181a4c7a4c43dc9f1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=UEjiRp7B4%2F9bNeUIs3oVArJYjAA%3D",
+        description: "BTS, also known as the Bangtan Boys, is a South Korean boy band formed in 2010. They are one of the best-selling music artists in the world."
+      },
+      {
+        title: "Kill This Love",
+        artist: "BLACKPINK",
+        tempo: 110,
+        tempoCategory: "Medium",
+        language: "Korean",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop, K-Pop, Hip Hop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/efb9ef9f75999851690ed956a8b393e9~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=2iBqc998HfGL%2F0ZtnNus59Jcvk0%3D",
+        description: "BLACKPINK is a South Korean girl group formed by YG Entertainment. They are known for their powerful performances and international popularity."
+      },
+      {
+        title: "Love Story",
+        artist: "Taylor Swift",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop, Country Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Get Lucky",
+        artist: "Daft Punk ft. Pharrell Williams",
+        tempo: 116,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Electronic, Disco, Funk",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/e681cea57b56ca91ccf47d47b684fd2f~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319776&x-signature=2CJsMzn6Q8oaSQgMK0knnmKQsFI%3D",
+        description: "Daft Punk was a French electronic music duo formed in 1993. They are known for their innovative music production and visual style."
+      },
+      {
+        title: "Take Five",
+        artist: "Dave Brubeck Quartet",
+        tempo: 104,
+        tempoCategory: "Medium",
+        language: "Instrumental",
+        mode: "Modal",
+        energy: "Medium",
+        style: "Jazz, Cool Jazz",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/70f4015547264b3d90dd1b217c35f1a8~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727785&x-signature=sXqPtvMMs0DGEtpafEQz%2Ffr3htk%3D",
+        description: "The Dave Brubeck Quartet was a jazz group led by American pianist Dave Brubeck. They were known for their experimentation with time signatures."
+      },
+      {
+        title: "Turkish March",
+        artist: "Wolfgang Amadeus Mozart",
+        tempo: 132,
+        tempoCategory: "Fast",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "High",
+        style: "Classical, Classical Period",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "Wolfgang Amadeus Mozart was a prolific and influential composer of the Classical period. He composed over 600 works during his short lifetime."
+      },
+      {
+        title: "Neon Gaze",
+        artist: "Synthwave Collective",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "Instrumental",
+        mode: "Minor",
+        energy: "High",
+        style: "Electronic, Synthwave, Retrowave",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f5294a94c47b451a95af30f15a74b5e1~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727785&x-signature=RfgfKiKmNx06PM3gCZfFM3IT6Ss%3D",
+        description: "Synthwave Collective is a group of electronic music producers specializing in the synthwave genre, which draws inspiration from 1980s electronic music and pop culture."
+      },
+      {
+        title: "Fly Me to the Moon",
+        artist: "Frank Sinatra",
+        tempo: 78,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Jazz, Vocal Jazz",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/70f4015547264b3d90dd1b217c35f1a8~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727785&x-signature=sXqPtvMMs0DGEtpafEQz%2Ffr3htk%3D",
+        description: "Frank Sinatra was an American singer, actor, and producer. He is one of the best-selling music artists of all time and is known for his smooth vocal style."
+      },
+      {
+        title: "Moonlight Sonata",
+        artist: "Ludwig van Beethoven",
+        tempo: 63,
+        tempoCategory: "Slow",
+        language: "Instrumental",
+        mode: "Minor",
+        energy: "Low",
+        style: "Classical, Romantic Period",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "Ludwig van Beethoven was a German composer and pianist. He is considered one of the most important figures in the history of Western music."
+      },
+      {
+        title: "Uptown Funk",
+        artist: "Mark Ronson ft. Bruno Mars",
+        tempo: 115,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Funk, Pop, R&B",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Mark Ronson is a British-American musician, DJ, record producer, and songwriter. Bruno Mars is an American singer, songwriter, record producer, and dancer."
+      },
+      {
+        title: "Shape of You",
+        artist: "Ed Sheeran",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop, Dancehall, Tropical House",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Edward Christopher Sheeran is an English singer, songwriter, musician, record producer, and actor. He is one of the world's best-selling music artists."
+      },
+      {
+        title: "Despacito",
+        artist: "Luis Fonsi ft. Daddy Yankee",
+        tempo: 89,
+        tempoCategory: "Medium",
+        language: "Spanish",
+        mode: "Major",
+        energy: "High",
+        style: "Latin, Reggaeton, Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Luis Fonsi is a Puerto Rican singer, songwriter, and actor. Daddy Yankee is a Puerto Rican rapper, singer, songwriter, and record producer."
+      },
+      {
+        title: "Bad Guy",
+        artist: "Billie Eilish",
+        tempo: 135,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop, Electropop, Trap",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Billie Eilish Pirate Baird O'Connell is an American singer and songwriter. She is known for her distinctive musical style and visual aesthetic."
+      },
+      {
+        title: "Old Town Road",
+        artist: "Lil Nas X ft. Billy Ray Cyrus",
+        tempo: 136,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Country, Hip Hop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Montero Lamar Hill, known by his stage name Lil Nas X, is an American rapper, singer, and songwriter. Billy Ray Cyrus is an American singer, songwriter, and actor."
+      },
+      {
+        title: "Blinding Lights",
+        artist: "The Weeknd",
+        tempo: 171,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop, Synthwave, Electropop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Abel Makkonen Tesfaye, known professionally as the Weeknd, is a Canadian singer, songwriter, and record producer. He is known for his distinctive voice and musical style."
+      }
+    ];
+    
+    // 新增歌曲数据
+    const newSongs = [
+      {
+        title: "Baba O'Riley",
+        artist: "The Who",
+        tempo: 136,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/a4fc82427bfbdeda7bb314e88298f3a0~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=P7aePPV%2B7XgbjlriGhJasVU%2BtyA%3D",
+        description: "The Who are an English rock band formed in London in 1964. They are considered one of the most influential rock bands of all time."
+      },
+      {
+        title: "Gangnam Style",
+        artist: "PSY",
+        tempo: 132,
+        tempoCategory: "Fast",
+        language: "Korean",
+        mode: "Major",
+        energy: "High",
+        style: "K-Pop/Dance",
+        cover: "https://p11-doubao-search-search-sign.byteimg.com/labis/6566b65a251f535425843a0e7b1a92f9~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=1qXPkWBrbMYAMysaUQZOgwBH%2B4g%3D",
+        description: "Park Jae-sang, known professionally as Psy, is a South Korean singer, rapper, songwriter, and record producer."
+      },
+      {
+        title: "Take Five",
+        artist: "Dave Brubeck",
+        tempo: 174,
+        tempoCategory: "Fast",
+        language: "Instrumental",
+        mode: "Modal",
+        energy: "High",
+        style: "Jazz",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/70f4015547264b3d90dd1b217c35f1a8~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727785&x-signature=sXqPtvMMs0DGEtpafEQz%2Ffr3htk%3D",
+        description: "David Warren Warren Brubeck was an American jazz pianist and composer, considered one of the foremost exponents of cool jazz."
+      },
+      {
+        title: "La Vie en Rose",
+        artist: "Édith Piaf",
+        tempo: 70,
+        tempoCategory: "Slow",
+        language: "French",
+        mode: "Major",
+        energy: "Low",
+        style: "French Chanson",
+        cover: "https://p26-doubao-search-search-sign.byteimg.com/labis/465a987f857c90219a0d13acc7fe86b0~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335077&x-signature=QQ6azDQeA9tcDr9Fj%2BJe9T2LkLs%3D",
+        description: "Édith Piaf was a French singer singer-songwriter, cabaret performer, and film actress noted as France's national chanteuse."
+      },
+      {
+        title: "Canon in D",
+        artist: "Johann Pachelbel",
+        tempo: 52,
+        tempoCategory: "Slow",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "Low",
+        style: "Classical",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "Johann Pachelbel was a German composer, organist, and teacher who brought the south German German organ tradition to its peak."
+      },
+      {
+        title: "Shallow",
+        artist: "Lady Gaga & Bradley Cooper",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop/Ballad",
+        cover: "https://p3-doubao-search-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Lady Gaga is an American singer, songwriter, and actress. Bradley Cooper is an American actor and filmmaker."
+      },
+      {
+        title: "Volare",
+        artist: "Domenico Modugno",
+        tempo: 116,
+        tempoCategory: "Medium",
+        language: "Italian",
+        mode: "Major",
+        energy: "High",
+        style: "Italian Pop",
+        cover: "https://p3-doubaobao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Domenico Modugno was an Italian singer, songwriter, actor, guitarist, and politician."
+      },
+      {
+        title: "Billie Jean",
+        artist: "Michael Jackson",
+        tempo: 117,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop/R&B",
+        cover: "https://p26-doubao-search-search-sign.byteimg.com/labis/d40568a258154bc7745899077671c3b2~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764303378&x-signature=pPJJBajinx2Tzc9GBwhGOWInNFI%3D",
+        description: "Michael Joseph Jackson was an American singer, songwriter, dancer, and philanthropist, known as the 'King of Pop'."
+      },
+      {
+        title: "Around the World",
+        artist: "Daft Punk",
+        tempo: 121,
+        tempoCategory: "Medium",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "High",
+        style: "Electronic/House",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/e681cea57b56ca91ccf47d47b684fd2f~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319776&x-signature=2CJsMzn6Q8oaSQgMK0knnmKQsFI%3D",
+        description: "Daft Punk was a French electronic music duo formed in 1993. They are known for their innovative music production and visual style."
+      },
+      {
+        title: "Hey Jude",
+        artist: "The Beatles",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/a4fc82427bfbdeda7bb314e88298f3a0~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=P7aePPV%2B7XgbjlriGhJasVU%2BtyA%3D",
+        description: "The Beatles were an English rock band formed in Liverpool in 1960. They are widely regarded as the most influential band of all time."
+      },
+      {
+        title: "Edelweiss",
+        artist: "Rodgers & Hammerstein",
+        tempo: 60,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Show Tune",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Rodgers & Hammerstein were an American songwriting duo consisting of Richard Rodgers and Oscar Hammerstein II."
+      },
+      {
+        title: "Rhapsody in Blue",
+        artist: "George Gershwin",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "High",
+        style: "Classical/Jazz",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "George Gershwin was an American composer, pianist, and painter whose compositions spanned both popular and classical genres."
+      },
+      {
+        title: "All of Me",
+        artist: "John Legend",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/R&B",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "John Roger Stephens, known professionally as John Legend, is an American singer, songwriter, pianist, and record producer."
+      },
+      {
+        title: "I Want to Hold Your Hand",
+        artist: "The Beatles",
+        tempo: 125,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/a4fc82427bfbdeda7bb314e88298f3a0~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=P7aePPV%2B7XgbjlriGhJasVU%2BtyA%3D",
+        description: "The Beatles were an English rock band formed in Liverpool in 1960. They are widely regarded as the most influential band of all time."
+      },
+      {
+        title: "Take the A Train",
+        artist: "Duke Ellington",
+        tempo: 160,
+        tempoCategory: "Fast",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "High",
+        style: "Jazz",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/70f4015547264b3d90dd1b217c35f1a8~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727785&x-signature=sXqPtvMMs0DGEtpafEQz%2Ffr3htk%3D",
+        description: "Edward Kennedy Ellington, known professionally as Duke Ellington, was an American composer, pianist, and leader of a jazz orchestra."
+      },
+      {
+        title: "Chiquitita",
+        artist: "ABBA",
+        tempo: 97,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/43eef3c34b33d19b3f2f05728e521db5~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=qtb2f96ZwteEYw3IsJlSLNR%2FJyU%3D",
+        description: "ABBA were a Swedish pop supergroup formed in Stockholm in 1972 by Agnetha Fältskog, Björn Ulvaeus, Benny Andersson, and Anni-Frid Lyngstad."
+      },
+      {
+        title: "Carmen Suite",
+        artist: "Georges Bizet",
+        tempo: 114,
+        tempoCategory: "Medium",
+        language: "Instrumental",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Classical",
+        cover: "https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7ebc03c439654e6b813722c4aee3ae4c~tplv-a9rns2rl98-image.image?rcl=202509291647464ECF5406A6046CED2635&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1761727784&x-signature=2prwCuNRQK2XWuSkNhmf9SWXtao%3D",
+        description: "Alexandre César Léopold Bizet, better known as Georges Bizet, was a French composer of the Romantic era."
+      },
+      {
+        title: "Born to Run",
+        artist: "Bruce Springsteen",
+        tempo: 149,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Rock",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/b0a083a71b16f0c8bd6f0de268125bb6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335089&x-signature=lULTXEjp3OvNdKXWAou%2FBRmgBB8%3D",
+        description: "Bruce Frederick Joseph Springsteen is an American singer, songwriter, and musician known as 'The Boss'."
+      },
+      {
+        title: "Fly Me to the Moon",
+        artist: "Frank Sinatra",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Jazz/Standards",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/9eadc18a6def29fa0b1f7699f10d5588~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335077&x-signature=7uU2OTI11WBINJhH7ysnl2pxA6I%3D",
+        description: "Francis Albert Sinatra was an American singer, actor, and producer who is one of the best-selling music artists of all time."
+      },
+      {
+        title: "Zombie",
+        artist: "The Cranberries",
+        tempo: 110,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Alternative Rock",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/4674ed29d57dcbc6b5df595b326410b3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335077&x-signature=OAwzoBsJA%2FmRHm6o0wRQ0%2BVRDks%3D",
+        description: "The Cranberries were an Irish rock band formed in Limerick, Ireland, in 1989."
+      },
+      {
+        title: "Blue Danube Waltz",
+        artist: "Johann Strauss II",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "Instrumental",
+        mode: "Major",
+        energy: "Medium",
+        style: "Classical/Waltz",
+        cover: "https://p26-doubao-search-sign.byteimg.com/labis/1d3a8dd89dfeb99d073a515e834f8869~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335089&x-signature=NTQ7B0iS04AVMc2hosEAPLsi8fk%3D",
+        description: "Johann Strauss II, also known as Johann Strauss 'Waltz King', was an Austrian composer of light music, particularly dance music and operettas."
+      },
+      {
+        title: "Little Lion Man",
+        artist: "Mumford & Sons",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Folk/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Mumford & Sons are a British folk rock band formed in London in 2007."
+      },
+      {
+        title: "24K Magic",
+        artist: "Bruno Mars",
+        tempo: 104,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop/Funk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/95a8dc4e6ff79035f4040d417b3b3a83~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764319745&x-signature=6LJ%2Fhu5qQr%2FkCaqcDbmUbw1xnGI%3D",
+        description: "Peter Gene Hernandez, known professionally as Bruno Mars, is an American singer, songwriter, record producer, and dancer."
+      },
+      {
+        title: "Youngblood",
+        artist: "5 Seconds of Summer",
+        tempo: 112,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/d518f6b38cd601917f06bf7def517596~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=ZLKOMfkHUFRK3VLUusf2gtMJqns%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "She Looks So Perfect",
+        artist: "5 Seconds of Summer",
+        tempo: 132,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Amnesia",
+        artist: "5 Seconds of Summer",
+        tempo: 92,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Want You Back",
+        artist: "5 Seconds of Summer",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Lie to Me",
+        artist: "5 Seconds of Summer",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Easier",
+        artist: "5 Seconds of Summer",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Teeth",
+        artist: "5 Seconds of Summer",
+        tempo: 132,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "Old Me",
+        artist: "5 Seconds of Summer",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop/Rock",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/fc09b106924901f137f9114e845e67d6~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=RSa9UPMpwe74Lf8i%2F%2FWUltRZ0Ko%3D",
+        description: "5 Seconds of Summer, often shortened to 5SOS, are an Australian pop rock band from Sydney, New South Wales."
+      },
+      {
+        title: "You Belong with Me",
+        artist: "Taylor Swift",
+        tempo: 112,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Country",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Fearless",
+        artist: "Taylor Swift",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Country",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Mine",
+        artist: "Taylor Swift",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Country",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Mean",
+        artist: "Taylor Swift",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Country",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "We Are Never Ever Getting Back Together",
+        artist: "Taylor Swift",
+        tempo: 116,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "I Knew You Were Trouble",
+        artist: "Taylor Swift",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "22",
+        artist: "Taylor Swift",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Shake It Off",
+        artist: "Taylor Swift",
+        tempo: 160,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Blank Space",
+        artist: "Taylor Swift",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Style",
+        artist: "Taylor Swift",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Bad Blood",
+        artist: "Taylor Swift ft. Kendrick Lamar",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. Kendrick Lamar is an American rapper, songwriter, and record producer."
+      },
+      {
+        title: "Wildest Dreams",
+        artist: "Taylor Swift",
+        tempo: 92,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Out of the Woods",
+        artist: "Taylor Swift",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "New Romantics",
+        artist: "Taylor Swift",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Look What You Made Me Do",
+        artist: "Taylor Swift",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "...Ready for It?",
+        artist: "Taylor Swift",
+        tempo: 132,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "End Game",
+        artist: "Taylor Swift ft. Ed Sheeran & Future",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop/Hip-Hop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. Ed Sheeran is an English singer, songwriter, musician, record producer, and actor. Future is an American rapper, singer, songwriter, and record producer."
+      },
+      {
+        title: "Delicate",
+        artist: "Taylor Swift",
+        tempo: 104,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p11-doubao-search-sign.byteimg.com/labis/cd5a794edd0179619ceb16fbdc6efaf8~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=QRy0ZFaeIdwFfN%2B1kmdqXKS63rA%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Getaway Car",
+        artist: "Taylor Swift",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "King of My Heart",
+        artist: "Taylor Swift",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "All You Had to Do Was Stay",
+        artist: "Taylor Swift",
+        tempo: 128,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Cruel Summer",
+        artist: "Taylor Swift",
+        tempo: 160,
+        tempoCategory: "Fast",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Lover",
+        artist: "Taylor Swift",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "You Need to Calm Down",
+        artist: "Taylor Swift",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "The Man",
+        artist: "Taylor Swift",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "High",
+        style: "Pop",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Cardigan",
+        artist: "Taylor Swift",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Willow",
+        artist: "Taylor Swift",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Exile",
+        artist: "Taylor Swift ft. Bon Iver",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. Bon Iver is an American indie folk band founded in 2006 by singer-songwriter Justin Vernon."
+      },
+      {
+        title: "My Tears Ricochet",
+        artist: "Taylor Swift",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Mirrorball",
+        artist: "Taylor Swift",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "August",
+        artist: "Taylor Swift",
+        tempo: 104,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "This Is Me Trying",
+        artist: "Taylor Swift",
+        tempo: 84,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Illicit Affairs",
+        artist: "Taylor Swift",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Invisible String",
+        artist: "Taylor Swift",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Mad Woman",
+        artist: "Taylor Swift",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Epiphany",
+        artist: "Taylor Swift",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Betty",
+        artist: "Taylor Swift",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "English",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Peace",
+        artist: "Taylor Swift",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Hoax",
+        artist: "Taylor Swift",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "English",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop/Folk",
+        cover: "https://p3-doubao-search-sign.byteimg.com/labis/132c8d1185e30502119ea75893c9d476~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1764335038&x-signature=fmPHsM0AyOCpqrFJ%2Beey7m09YRY%3D",
+        description: "Taylor Alison Swift is an American singer-songwriter. She is known for her narrative songwriting and has received numerous awards throughout her career."
+      },
+      {
+        title: "Blue and White Porcelain",
+        artist: "Jay Chou",
+        tempo: 78,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Chinese Style / Pop",
+        cover: "https://example.com/blue-white-porcelain.jpg", // Replace with actual cover URL
+        description: "A beautiful song inspired by traditional Chinese porcelain art."
+        },
+        {
+        title: "Chengdu",
+        artist: "Zhao Lei",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/chengdu.jpg", // Replace with actual cover URL
+        description: "A nostalgic song about the city of Chengdu."
+        },
+        {
+        title: "Boundless Oceans, Vast Skies",
+        artist: "Beyond",
+        tempo: 112,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock",
+        cover: "https://example.com/boundless-oceans.jpg", // Replace with actual cover URL
+        description: "One of Beyond's most famous rock anthems."
+        },
+        {
+        title: "Unbearable",
+        artist: "Cui Jian",
+        tempo: 120,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "High",
+        style: "Rock",
+        cover: "https://example.com/unbearable.jpg", // Replace with actual cover URL
+        description: "A classic Chinese rock song with social commentary."
+        },
+        {
+        title: "Olive Tree",
+        artist: "Li Jian",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/olive-tree.jpg", // Replace with actual cover URL
+        description: "A poetic folk song about longing and dreams."
+        },
+        {
+        title: "Jasmine Flower",
+        artist: "Song Zuying",
+        tempo: 66,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Traditional Folk",
+        cover: "https://example.com/jasmine-flower.jpg", // Replace with actual cover URL
+        description: "A famous traditional Chinese folk song."
+        },
+        {
+        title: "Kangding Love Song",
+        artist: "Peng Liyuan",
+        tempo: 68,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Traditional Folk",
+        cover: "https://example.com/kangding-love-song.jpg", // Replace with actual cover URL
+        description: "A well-known folk song from Sichuan Province."
+        },
+        {
+        title: "Clouds of My Homeland",
+        artist: "Fei Xiang",
+        tempo: 75,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop",
+        cover: "https://example.com/clouds-of-homeland.jpg", // Replace with actual cover URL
+        description: "A nostalgic song about homesickness."
+        },
+        {
+        title: "My Motherland",
+        artist: "Guo Lanying",
+        tempo: 70,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Red Song / Folk-Pop",
+        cover: "https://example.com/my-motherland.jpg", // Replace with actual cover URL
+        description: "A patriotic song from the Chinese revolutionary era."
+        },
+        {
+        title: "Yao Long Drum Dance",
+        artist: "China National Traditional Orchestra",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "Chinese (instrumental)",
+        mode: "Major",
+        energy: "Medium",
+        style: "Traditional Instrumental",
+        cover: "https://example.com/yao-drum.jpg", // Replace with actual cover URL
+        description: "A vibrant orchestral piece inspired by Yao ethnic minority dance."
+        },
+        {
+        title: "Huangmei Opera: Female Prince Consort",
+        artist: "Yan Fengying",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Opera / Huangmei Opera",
+        cover: "https://example.com/female-prince.jpg", // Replace with actual cover URL
+        description: "A famous aria from Huangmei Opera."
+        },
+        {
+        title: "Peking Opera: Drunken Beauty",
+        artist: "Mei Lanfang",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Opera / Peking Opera",
+        cover: "https://example.com/drunken-beauty.jpg", // Replace with actual cover URL
+        description: "A classic Peking Opera piece performed by the legendary Mei Lanfang."
+        },
+        {
+        title: "Confession Balloon",
+        artist: "Jay Chou",
+        tempo: 92,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/confession-balloon.jpg", // Replace with actual cover URL
+        description: "A romantic pop song by Jay Chou."
+        },
+        {
+        title: "Common Jasmine Orange",
+        artist: "Jay Chou",
+        tempo: 95,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/common-jasmine.jpg", // Replace with actual cover URL
+        description: "A popular love song by Jay Chou."
+        },
+        {
+        title: "Little Luck",
+        artist: "Hebe Tien",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/little-luck.jpg", // Replace with actual cover URL
+        description: "A touching ballad from the movie 'Our Times'."
+        },
+        {
+        title: "Later",
+        artist: "Liu Ruoying",
+        tempo: 79,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/later.jpg", // Replace with actual cover URL
+        description: "A classic Chinese ballad about love and regret."
+        },
+        {
+        title: "Unfortunately, No If",
+        artist: "JJ Lin",
+        tempo: 82,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/no-if.jpg", // Replace with actual cover URL
+        description: "A heartfelt ballad by JJ Lin."
+        },
+        {
+        title: "Jiangnan",
+        artist: "JJ Lin",
+        tempo: 90,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/jiangnan.jpg", // Replace with actual cover URL
+        description: "A popular song about the beautiful region of Jiangnan."
+        },
+        {
+        title: "Against the Light",
+        artist: "Stefanie Sun",
+        tempo: 96,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/against-light.jpg", // Replace with actual cover URL
+        description: "An empowering pop song by Stefanie Sun."
+        },
+        {
+        title: "Dark Sky",
+        artist: "Stefanie Sun",
+        tempo: 77,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop",
+        cover: "https://example.com/dark-sky.jpg", // Replace with actual cover URL
+        description: "A nostalgic song about childhood memories."
+        },
+        {
+        title: "Red Bean",
+        artist: "Faye Wong",
+        tempo: 83,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/red-bean.jpg", // Replace with actual cover URL
+        description: "A poetic love song by Faye Wong."
+        },
+        {
+        title: "Legend",
+        artist: "Faye Wong",
+        tempo: 74,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop",
+        cover: "https://example.com/legend.jpg", // Replace with actual cover URL
+        description: "A hauntingly beautiful song made famous by Faye Wong."
+        },
+        {
+        title: "Ten Years",
+        artist: "Eason Chan",
+        tempo: 81,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/ten-years.jpg", // Replace with actual cover URL
+        description: "One of Eason Chan's most famous ballads about lost love."
+        },
+        {
+        title: "Exaggerated",
+        artist: "Eason Chan",
+        tempo: 110,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "High",
+        style: "Pop",
+        cover: "https://example.com/exaggerated.jpg", // Replace with actual cover URL
+        description: "A dramatic song about feeling alienated in society."
+        },
+        {
+        title: "My Deskmate",
+        artist: "Lao Lang",
+        tempo: 73,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/my-deskmate.jpg", // Replace with actual cover URL
+        description: "A nostalgic folk song about school days."
+        },
+        {
+        title: "The Brother Sleeping on My Upper Bunk",
+        artist: "Lao Lang",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/upper-bunk.jpg", // Replace with actual cover URL
+        description: "A folk song about friendship in youth."
+        },
+        {
+        title: "Miss Dong",
+        artist: "Song Dongye",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/miss-dong.jpg", // Replace with actual cover URL
+        description: "A popular folk song with poetic lyrics."
+        },
+        {
+        title: "Anhe Bridge",
+        artist: "Song Dongye",
+        tempo: 84,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/anhe-bridge.jpg", // Replace with actual cover URL
+        description: "A melancholic folk song about lost love."
+        },
+        {
+        title: "South of the Mountain",
+        artist: "Ma Di",
+        tempo: 78,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/south-mountain.jpg", // Replace with actual cover URL
+        description: "A popular folk song with a sense of longing."
+        },
+        {
+        title: "Ideal",
+        artist: "Zhao Lei",
+        tempo: 86,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Folk",
+        cover: "https://example.com/ideal.jpg", // Replace with actual cover URL
+        description: "A song about pursuing one's dreams."
+        },
+        {
+        title: "Alive",
+        artist: "Hao Yun",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Folk / Rock",
+        cover: "https://example.com/alive.jpg", // Replace with actual cover URL
+        description: "A folk-rock song about the struggles of daily life."
+        },
+        {
+        title: "Chengdu",
+        artist: "Zhao Lei",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/chengdu-2.jpg", // Replace with actual cover URL
+        description: "A nostalgic song about the city of Chengdu."
+        },
+        {
+        title: "Relieve Sorrow",
+        artist: "Mao Buyi",
+        tempo: 75,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk / Pop",
+        cover: "https://example.com/relieve-sorrow.jpg", // Replace with actual cover URL
+        description: "A melancholy song about finding solace in drinking."
+        },
+        {
+        title: "Someone Like Me",
+        artist: "Mao Buyi",
+        tempo: 77,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk / Pop",
+        cover: "https://example.com/someone-like-me.jpg", // Replace with actual cover URL
+        description: "A self-reflective song about personal struggles."
+        },
+        {
+        title: "If There is a Next Life",
+        artist: "Tan Weiwei",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Folk / Pop",
+        cover: "https://example.com/next-life.jpg", // Replace with actual cover URL
+        description: "A song about love and reincarnation."
+        },
+        {
+        title: "The Night of Ulaanbaatar",
+        artist: "Tan Weiwei",
+        tempo: 82,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk / Pop",
+        cover: "https://example.com/ulaanbaatar.jpg", // Replace with actual cover URL
+        description: "A song about longing for someone far away."
+        },
+        {
+        title: "The Brightest Star in the Night Sky",
+        artist: "Escape Plan",
+        tempo: 108,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock / Pop",
+        cover: "https://example.com/brightest-star.jpg", // Replace with actual cover URL
+        description: "An uplifting rock song about hope."
+        },
+        {
+        title: "Ten Thousand Sorrows",
+        artist: "Escape Plan",
+        tempo: 112,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock / Pop",
+        cover: "https://example.com/ten-thousand.jpg", // Replace with actual cover URL
+        description: "A rock song about overcoming sadness."
+        },
+        {
+        title: "Ordinary Path",
+        artist: "Pu Shu",
+        tempo: 86,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Rock / Pop",
+        cover: "https://example.com/ordinary-path.jpg", // Replace with actual cover URL
+        description: "A philosophical song about life's journey."
+        },
+        {
+        title: "Those Flowers",
+        artist: "Pu Shu",
+        tempo: 79,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Rock / Folk",
+        cover: "https://example.com/those-flowers.jpg", // Replace with actual cover URL
+        description: "A nostalgic song about lost friends."
+        },
+        {
+        title: "Life Like Summer Flowers",
+        artist: "Pu Shu",
+        tempo: 98,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock / Pop",
+        cover: "https://example.com/summer-flowers.jpg", // Replace with actual cover URL
+        description: "A song inspired by Tagore's poetry."
+        },
+        {
+        title: "Blue Lotus",
+        artist: "Xu Wei",
+        tempo: 116,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "High",
+        style: "Rock",
+        cover: "https://example.com/blue-lotus.jpg", // Replace with actual cover URL
+        description: "An inspiring rock song about freedom."
+        },
+        {
+        title: "Hometown",
+        artist: "Xu Wei",
+        tempo: 94,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock",
+        cover: "https://example.com/hometown.jpg", // Replace with actual cover URL
+        description: "A rock song about longing for home."
+        },
+        {
+        title: "The You of the Past",
+        artist: "Xu Wei",
+        tempo: 102,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Rock",
+        cover: "https://example.com/you-of-past.jpg", // Replace with actual cover URL
+        description: "A rock song about youth and memories."
+        },
+        {
+        title: "Blooming Life",
+        artist: "Wang Feng",
+        tempo: 118,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "High",
+        style: "Rock",
+        cover: "https://example.com/blooming-life.jpg", // Replace with actual cover URL
+        description: "An anthemic rock song about living life to the fullest."
+        },
+        {
+        title: "Beijing Beijing",
+        artist: "Wang Feng",
+        tempo: 90,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock",
+        cover: "https://example.com/beijing.jpg", // Replace with actual cover URL
+        description: "A rock song about the struggles of life in Beijing."
+        },
+        {
+        title: "In the Spring",
+        artist: "Wang Feng",
+        tempo: 105,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Rock",
+        cover: "https://example.com/in-the-spring.jpg", // Replace with actual cover URL
+        description: "A rock song about hope and renewal."
+        },
+        {
+        title: "Miss Dong",
+        artist: "Song Dongye",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/miss-dong-2.jpg", // Replace with actual cover URL
+        description: "A popular folk song with poetic lyrics."
+        },
+        {
+        title: "Southern Girl",
+        artist: "Zhao Lei",
+        tempo: 83,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/southern-girl.jpg", // Replace with actual cover URL
+        description: "A folk song about a girl from southern China."
+        },
+        {
+        title: "Rice Shop",
+        artist: "Zhang Weiwei",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/rice-shop.jpg", // Replace with actual cover URL
+        description: "A folk song with a simple, nostalgic melody."
+        },
+        {
+        title: "Slow in the Past",
+        artist: "Liu Huyi",
+        tempo: 72,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/slow-in-past.jpg", // Replace with actual cover URL
+        description: "A folk song about the beauty of a slower pace of life."
+        },
+        {
+        title: "Lend Me",
+        artist: "Xie Chunhua",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Folk",
+        cover: "https://example.com/lend-me.jpg", // Replace with actual cover URL
+        description: "A folk song about seeking strength from others."
+        },
+        {
+        title: "Countless Places",
+        artist: "Chen Li",
+        tempo: 92,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Folk",
+        cover: "https://example.com/countless-places.jpg", // Replace with actual cover URL
+        description: "A folk song about traveling and experiencing the world."
+        },
+        {
+        title: "Wonderful Ability Song",
+        artist: "Chen Li",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/wonderful-ability.jpg", // Replace with actual cover URL
+        description: "A folk song about self-discovery and empowerment."
+        },
+        {
+        title: "Highly Flammable and Explosive",
+        artist: "Chen Li",
+        tempo: 100,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Folk / Rock",
+        cover: "https://example.com/flammable.jpg", // Replace with actual cover URL
+        description: "A song about the intensity of love."
+        },
+        {
+        title: "Walking Horse",
+        artist: "Chen Li",
+        tempo: 81,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/walking-horse.jpg", // Replace with actual cover URL
+        description: "A melancholic folk song about lost love."
+        },
+        {
+        title: "Little Half",
+        artist: "Chen Li",
+        tempo: 84,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Folk",
+        cover: "https://example.com/little-half.jpg", // Replace with actual cover URL
+        description: "A song about incomplete love."
+        },
+        {
+        title: "Say It's Over",
+        artist: "Tia Ray",
+        tempo: 87,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / R&B",
+        cover: "https://example.com/say-over.jpg", // Replace with actual cover URL
+        description: "A soulful R&B song about ending a relationship."
+        },
+        {
+        title: "A Diao",
+        artist: "Angela Zhang",
+        tempo: 95,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop / Rock",
+        cover: "https://example.com/a-diao.jpg", // Replace with actual cover URL
+        description: "A powerful song about perseverance."
+        },
+        {
+        title: "Bubble",
+        artist: "G.E.M. Deng Ziqi",
+        tempo: 89,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/bubble.jpg", // Replace with actual cover URL
+        description: "A ballad about the fragility of love."
+        },
+        {
+        title: "Light Years Away",
+        artist: "G.E.M. Deng Ziqi",
+        tempo: 102,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/light-years.jpg", // Replace with actual cover URL
+        description: "A song about love across distances."
+        },
+        {
+        title: "Devil from Heaven",
+        artist: "G.E.M. Deng Ziqi",
+        tempo: 110,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Medium",
+        style: "Pop / Electronic",
+        cover: "https://example.com/devil-heaven.jpg", // Replace with actual cover URL
+        description: "A song about temptation and inner conflict."
+        },
+        {
+        title: "Painting",
+        artist: "G.E.M. Deng Ziqi",
+        tempo: 83,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop",
+        cover: "https://example.com/painting.jpg", // Replace with actual cover URL
+        description: "A song about using art to express emotions."
+        },
+        {
+        title: "The Wind Rises",
+        artist: "Wu Qingfeng",
+        tempo: 98,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop",
+        cover: "https://example.com/wind-rises.jpg", // Replace with actual cover URL
+        description: "A song about embracing change and challenges."
+        },
+        {
+        title: "Light Chaser",
+        artist: "Yoyo Sham",
+        tempo: 86,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/light-chaser.jpg", // Replace with actual cover URL
+        description: "A song about pursuing someone you admire."
+        },
+        {
+        title: "Time Steals",
+        artist: "Jin Wenqi",
+        tempo: 78,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/time-steals.jpg", // Replace with actual cover URL
+        description: "A song about the passage of time and its effects on relationships."
+        },
+        {
+        title: "Little Luck",
+        artist: "Hebe Tien",
+        tempo: 88,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/little-luck-2.jpg", // Replace with actual cover URL
+        description: "A touching ballad from the movie 'Our Times'."
+        },
+        {
+        title: "To Youth",
+        artist: "Faye Wong",
+        tempo: 80,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/to-youth.jpg", // Replace with actual cover URL
+        description: "A song about nostalgia for youth."
+        },
+        {
+        title: "Those Years",
+        artist: "Faye Wong",
+        tempo: 76,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/those-years.jpg", // Replace with actual cover URL
+        description: "A song about memories of past relationships."
+        },
+        {
+        title: "Time Boiling Rain",
+        artist: "Yu Kewei",
+        tempo: 79,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/time-rain.jpg", // Replace with actual cover URL
+        description: "A song about the passage of time in relationships."
+        },
+        {
+        title: "Why Love",
+        artist: "Wallace Chung",
+        tempo: 82,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / Ballad",
+        cover: "https://example.com/why-love.jpg", // Replace with actual cover URL
+        description: "A romantic ballad about the nature of love."
+        },
+        {
+        title: "Cool Cool",
+        artist: "Zhang Bichen / Yang Zongwei",
+        tempo: 85,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / TV Drama OST",
+        cover: "https://example.com/cool-cool.jpg", // Replace with actual cover URL
+        description: "A duet from the TV drama 'Three Lives, Three Worlds'."
+        },
+        {
+        title: "Three Lives, Three Worlds",
+        artist: "Jason Zhang",
+        tempo: 90,
+        tempoCategory: "Medium",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Medium",
+        style: "Pop / TV Drama OST",
+        cover: "https://example.com/three-lives.jpg", // Replace with actual cover URL
+        description: "The theme song from the popular TV drama."
+        },
+        {
+        title: "Do You Know",
+        artist: "Yu Kewei / Hu Xia",
+        tempo: 77,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Major",
+        energy: "Low",
+        style: "Pop / TV Drama OST",
+        cover: "https://example.com/do-you-know.jpg", // Replace with actual cover URL
+        description: "A duet from the TV drama 'The Story of Ming Lan'."
+        },
+        {
+        title: "The Sound of Snow Falling",
+        artist: "Lu Hu",
+        tempo: 75,
+        tempoCategory: "Slow",
+        language: "Chinese",
+        mode: "Minor",
+        energy: "Low",
+        style: "Pop / TV Drama OST",
+        cover: "https://example.com/snow-sound.jpg", // Replace with actual cover URL
+        description: "A song from the TV drama 'Story of Yanxi Palace'."
+        },
+
+
+
+
+
+
+
+
+
+
+    
+      
+      
+    ];
+    
+    // 合并音乐数据
+    const musicData = [
+      ...originalMusicData,
+      ...newSongs
+    ];
+    
+    // 用户选择的筛选条件
+    let userFilters = {
+      tempo: "Any",
+      language: "Any",
+      mode: "Any",
+      energy: "Any",
+      count: 5
+    };
+    
+    // 初始化筛选器交互
+    function initFilters() {
+      const filterItems = document.querySelectorAll('.filter-item');
+      
+      filterItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const filterType = this.getAttribute('data-filter');
+          const filterValue = this.getAttribute('data-value');
+          
+          // 更新用户筛选条件
+          userFilters[filterType] = filterValue;
+          
+          // 更新UI
+          document.querySelectorAll('.filter-item[data-filter="' + filterType + '"]').forEach(el => {
+            el.classList.remove('active');
+          });
+          this.classList.add('active');
+        });
+      });
+    }
+    
+    // 初始化推荐按钮
+    function initRecommendButtons() {
+      const recommendBtn = document.getElementById('recommend-btn');
+      const randomBtn = document.getElementById('random-btn');
+      
+      recommendBtn.addEventListener('click', function() {
+        document.getElementById('result-title').textContent = 'Recommendations';
+        const recommendations = getRecommendations();
+        displayResults(recommendations);
+      });
+      
+      randomBtn.addEventListener('click', function() {
+        document.getElementById('result-title').textContent = 'Random Selection';
+        const randomSongs = getRandomSongs();
+        displayResults(randomSongs);
+      });
+    }
+    
+    // 初始化推荐数量滑块
+    function initCountSlider() {
+      const slider = document.getElementById('recommend-count');
+      const countValue = document.getElementById('count-value');
+      
+      slider.addEventListener('input', function() {
+        userFilters.count = parseInt(this.value);
+        countValue.textContent = this.value;
+      });
+    }
+    
+    // 根据 根据筛选条件获取推荐结果
+    function getRecommendations() {
+      return musicData.filter(song => {
+        if (userFilters.tempo !== "Any" && song.tempoCategory !== userFilters.tempo) return false;
+        if (userFilters.language !== "Any" && song.language !== userFilters.language) return false;
+        if (userFilters.mode !== "Any" && song.mode !== userFilters.mode) return false;
+        if (userFilters.energy !== "Any" && song.energy !== userFilters.energy) return false;
+        return true;
+      }).slice(0, userFilters.count);
+    }
+    
+    // 获取获取随机随机推荐歌曲
+    function getRandomSongs() {
+      // 复制数组以避免修改原始数据
+      const shuffled = [...musicData];
+      
+      // Fisher-Yates 洗牌算法
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      
+      return shuffled.slice(0, userFilters.count);
+    }
+    
+    // 显示推荐结果
+    function displayResults(songs) {
+      const container = document.getElementById('results-container');
+      const emptyState = document.getElementById('empty-state');
+      
+      // 清空容器
+      container.innerHTML = '';
+      
+      // 检查是否有结果
+      if (songs.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      // 隐藏空状态
+      emptyState.classList.add('hidden');
+      
+      // 显示结果
+      songs.forEach(song => {
+        const card = createMusicCard(song);
+        container.appendChild(card);
+      });
+    }
+    
+    // 创建音乐卡片
+    function createMusicCard(song) {
+      const card = document.createElement('div');
+      card.className = 'music-card bg-dark bg-opacity-50 rounded-xl overflow-hidden shadow-lg';
+      
+      card.innerHTML = `
+        <div class="relative">
+          <img src="${song.cover}" alt="${song.title}" class="w-full h-48 object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
+          <button class="play-button absolute bottom-4 right-4 bg-primary hover:bg-primary-dark text-white rounded-full w-12 h-12 flex items-center justify-center transition-colors" data-song="${song.title}">
+            <i class="fa fa-play"></i>
+          </button>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg mb-1">${song.title}</h4>
+          <p class="text-gray-400 text-sm mb-3">${song.artist}</p>
+          
+          <div class="flex flex-wrap justify text-xs text-gray-400 mb-3">
+            <span class="bg-dark bg-opacity-50 px-2 py-1 rounded-full">${song.tempoCategory} ${song.tempo} BPM</span>
+            <span class="bg-dark bg-opacity-50 px-2 py-1 rounded-full ml-2">${song.language}</span>
+            <span class="bg-dark bg-opacity-50 px-2 py-1 rounded-full ml-2">${song.mode}</span>
+          </div>
+          
+          <div class="mb-3">
+            <div class="flex justify-between text-xs mb-1">
+              <span>Energy</span>
+              <span>${song.energy}</span>
+            </div>
+            <div class="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div class="h-full bg-primary" style="width: ${getEnergyPercent(
+                song.energy
+              )}%"></div>
+            </div>
+          </div>
+          
+          <div class="text-xs text-gray-400">
+            <p class="font-medium mb-1">Genre</p>
+            <p>${song.style}</p>
+          </div>
+        </div>
+      `;
+      
+      // 添加播放按钮点击事件
+      const playButton = card.querySelector('.play-button');
+      playButton.addEventListener('click', function() {
+        playSong(song);
+      });
+      
+      return card;
+    }
+    
+    // 根据能量值获取百分比
+    function getEnergyPercent(energy) {
+      switch(energy) {
+        case "Low": return 33;
+        case "Medium": return 66;
+        case "High": return 100;
+        default: return 50;
+      }
+    }
+    
+    // 播放歌曲
+    function playSong(song) {
+      const audioPlayer = document.getElementById('audio-player');
+      const playerCover = document.getElementById('player-cover');
+      const playerTitle = document.getElementById('player-title');
+      const playerArtist = document.getElementById('player-artist');
+      const playerPlay = document.getElementById('player-play');
+      
+      // 更新播放器信息
+      playerCover.src = song.cover;
+      playerCover.alt = song.title;
+      playerTitle.textContent = song.title;
+      playerArtist.textContent = song.artist;
+      
+      // 显示播放器
+      audioPlayer.classList.remove('hidden');
+      
+      // 模拟播放状态
+      playerPlay.innerHTML = '<i class="fa fa-pause text-xl"></i>';
+      playerPlay.dataset.playing = 'true';
+      playerPlay.dataset.song = song.title;
+      
+      // 模拟进度条
+      simulateProgress(0);
+    }
+    
+    // 模拟播放进度
+    function simulateProgress(startWidth = 0) {
+      const progress = document.getElementById('player-progress');
+      const currentTime = document.getElementById('player-current-time');
+      const duration = document.getElementById('player-duration');
+      const playerPlay = document.getElementById('player-play');
+      
+      // 重置进度
+      progress.style.width = startWidth + '%';
+      duration.textContent = '3:30';
+      
+      // 计算起始时间
+      let width = startWidth;
+      const startSeconds = Math.floor(width * 210 / 100);
+      let seconds = startSeconds;
+      
+      // 更新起始时间显示
+      const startMinutes = Math.floor(seconds / 60);
+      const startRemainingSeconds = seconds % 60;
+      currentTime.textContent = `${String(startMinutes).padStart(1, '0')}:${String(startRemainingSeconds).padStart(2, '0')}`;
+      
+      // 清除之前的定时器
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      
+      // 模拟进度增加
+      progressInterval = setInterval(() => {
+        if (width >= 100) {
+          clearInterval(progressInterval);
+          playerPlay.innerHTML = '<i class="fa fa-play text-xl"></i>';
+          playerPlay.dataset.playing = 'false';
+        } else {
+          width += 0.1;
+          seconds += 0.21; // 每100ms增加0.21秒 (210秒总时长)
+          progress.style.width = width + '%';
+          
+          // 更新时间
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = Math.floor(seconds % 60);
+          currentTime.textContent = `${String(minutes).padStart(1, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+      }, 100);
+    }
+  </script>
+</body>
+</html>
